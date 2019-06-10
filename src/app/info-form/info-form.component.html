@@ -1,0 +1,63 @@
+<h1>
+  Please enter the following information:
+</h1>
+
+<div id="frmMsgs">
+	<label id="hdrMsgs">
+		<span *ngIf="!validationStatus.isFormValid" class="alert-danger">
+			Form is not valid
+		</span>
+		<span *ngIf="!validationStatus.isEmailValid" class="alert-danger">
+			Email is not valid
+		</span>
+		<span *ngIf="!validationStatus.isPassValid" class="alert-danger">
+			Password is not valid
+		</span>
+	</label>
+</div>
+
+<form id="frmInfo" [formGroup]="infoForm" (ngSubmit)="onSubmit()">
+	<fieldset>
+		<label>
+	    <span>Mail address:</span>
+	    <input #email type="email" formControlName="email" id="email" class="form-control" required>
+			<div *ngIf="!validationStatus.isEmailValid" class="alert-danger">
+					Email is not valid
+			</div>
+	  </label>
+
+		<label>
+			<span>Subscription:</span>
+			<select formControlName="subscription" required>
+				<option value="" disabled>-- Choose Option --</option>
+				<option *ngFor="let sub of subscriptionArr" [ngValue]="sub">
+					{{ sub }}
+				</option>
+			</select>
+		</label>
+
+		<br>
+		<br>
+
+	  <label>
+			<span>Password:</span>
+	    <input type="password" formControlName="password" required ng-pattern="/[^0-9]{8}/g">
+			<div *ngIf="!validationStatus.isPassValid" class="alert-danger" >
+					Password is not valid
+			</div>
+	  </label>
+
+		<button type="submit" [disabled]="!infoForm.valid">Submit</button>
+		<button type="button" (click)="clearInputs()">Clear</button>
+	</fieldset>
+</form>
+
+
+
+<!-- <p>
+  Form Status: {{ infoForm.status }}
+</p>
+
+<p>
+  Form Value: {{ infoForm.value | json }}
+</p> -->
