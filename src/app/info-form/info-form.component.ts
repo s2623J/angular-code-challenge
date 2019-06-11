@@ -43,8 +43,8 @@ export class InfoFormComponent implements OnInit, OnDestroy  {
 	ngOnInit() {
 		this.formClick = fromEvent(document.querySelector('#frmInfo'), 'keyup')
 			.pipe(
-				// wait 300ms after each keystroke before considering the term
-	      debounceTime(300),
+				// wait 700ms after each keystroke before considering the term
+	      debounceTime(700),
 	      distinctUntilChanged()
 			)
 			.subscribe(() => {

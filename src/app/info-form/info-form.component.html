@@ -20,7 +20,8 @@
 	<fieldset>
 		<label>
 	    <span>Mail address:</span>
-	    <input #email type="email" formControlName="email" id="email" class="form-control" required>
+	    <input #email type="email" formControlName="email" id="email"
+				class="form-control" required>
 			<div *ngIf="!validationStatus.isEmailValid" class="alert-danger">
 					Email is not valid
 			</div>
@@ -41,9 +42,11 @@
 
 	  <label>
 			<span>Password:</span>
-	    <input type="password" formControlName="password" required ng-pattern="/^(?:[a-zA-Z]|[^a-zA-Z0-9]){8}$/g">
+	    <input type="password" formControlName="password"
+				required ng-pattern="/^(?:[a-zA-Z]|[^a-zA-Z0-9]){8}$/g">
 			<div *ngIf="!validationStatus.isPassValid" class="alert-danger" >
-					Password is not valid
+					Password must be 8 character long with at least one character
+					and one special character
 			</div>
 	  </label>
 
@@ -54,10 +57,10 @@
 
 
 
-<p>
+<!-- <p>
   Form Status: {{ infoForm.status }}
 </p>
 
 <p>
   Form Value: {{ infoForm.value | json }}
-</p>
+</p> -->
