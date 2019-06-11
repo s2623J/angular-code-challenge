@@ -41,23 +41,23 @@
 
 	  <label>
 			<span>Password:</span>
-	    <input type="password" formControlName="password" required ng-pattern="/[^0-9]{8}/g">
+	    <input type="password" formControlName="password" required ng-pattern="/^(?:[a-zA-Z]|[^a-zA-Z0-9]){8}$/g">
 			<div *ngIf="!validationStatus.isPassValid" class="alert-danger" >
 					Password is not valid
 			</div>
 	  </label>
 
-		<button type="submit" [disabled]="!infoForm.valid">Submit</button>
+		<button type="submit" [disabled]="!validationStatus.isFormValid">Submit</button>
 		<button type="button" (click)="clearInputs()">Clear</button>
 	</fieldset>
 </form>
 
 
 
-<!-- <p>
+<p>
   Form Status: {{ infoForm.status }}
 </p>
 
 <p>
   Form Value: {{ infoForm.value | json }}
-</p> -->
+</p>

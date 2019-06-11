@@ -20,7 +20,7 @@ export class InfoFormComponent implements OnInit, OnDestroy  {
 		isPassValid: 	true
 	}
 	formClick: Subscription;
-	passPattern = /[^0-9]{8}/g;
+	passPattern = /^(?:[a-zA-Z]|[^a-zA-Z0-9]){8}$/g;
 
 	infoForm: FormGroup = this.fb.group({
     email: 				['', [Validators.required, Validators.email]],
@@ -43,8 +43,8 @@ export class InfoFormComponent implements OnInit, OnDestroy  {
 	ngOnInit() {
 		this.formClick = fromEvent(document.querySelector('#frmInfo'), 'keyup')
 			.pipe(
-				// wait 1000ms after each keystroke before considering the term
-	      debounceTime(1000),
+				// wait 300ms after each keystroke before considering the term
+	      debounceTime(300),
 	      distinctUntilChanged()
 			)
 			.subscribe(() => {
