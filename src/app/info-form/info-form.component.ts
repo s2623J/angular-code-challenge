@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatDialog, MatDialogRef  } from '@angular/material';
 
-import { fromEvent , Subscription} from 'rxjs';
+import { fromEvent , Subscription, Subject} from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
@@ -11,22 +11,31 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
   templateUrl: './info-form.component.html',
   styleUrls: ['./info-form.component.css']
 })
-export class InfoFormComponent implements OnInit, OnDestroy  {
+export class InfoFormComponent implements OnInit  {
 
 	subscriptionArr:	string[] = [ 'Basic', 'Advanced', 'Pro' ];
+	passPattern = /(?=.*?[A-Za-z0-9])(?=.*[^0-9A-Za-z]).+/g;
 	validationStatus = {
 		isFormValid: 	true,
 		isEmailValid: true,
 		isPassValid: 	true
 	}
-	formClick: Subscription;
-	passPattern = /^(?:[a-zA-Z]|[^a-zA-Z0-9]){8}$/g;
-
 	infoForm: FormGroup = this.fb.group({
     email: 				['', [Validators.required, Validators.email]],
 		subscription:	['', Validators.required],
-    password: 		['', [Validators.required, Validators.pattern(this.passPattern)]]
+    password: 		['', [
+			Validators.required,
+			Validators.pattern(this.passPattern),
+			Validators.minLength(8),
+			Validators.maxLength(8)
+		]]
 	});
+	formClick$ = this.infoForm.valueChanges
+		.pipe(
+			// wait 700ms after each keystroke before considering the term
+			debounceTime(700),
+			distinctUntilChanged()
+		);
 
 	private setDefaultSelectValue() {
 		this.infoForm.controls['subscription']
@@ -41,23 +50,22 @@ export class InfoFormComponent implements OnInit, OnDestroy  {
 	}
 
 	ngOnInit() {
-		this.formClick = fromEvent(document.querySelector('#frmInfo'), 'keyup')
-			.pipe(
-				// wait 700ms after each keystroke before considering the term
-	      debounceTime(700),
-	      distinctUntilChanged()
-			)
-			.subscribe(() => {
-				let frmInfo = this.infoForm;
-				let status = this.validationStatus;
-				status.isFormValid = frmInfo.valid;
-				status.isEmailValid = frmInfo.controls.email.valid;
-				status.isPassValid = frmInfo.controls.password.valid;
+		// this.formClick$ = fromEvent(document.querySelector('#frmInfo'), 'keyup')
+		// fromEvent(this.infoForm, 'valueChanges')
+		// this.formClick$ = this.infoForm.valueChanges
+		// 	.pipe(
+		// 		// wait 700ms after each keystroke before considering the term
+	  //     debounceTime(700),
+	  //     distinctUntilChanged()
+		// 	)
+			this.formClick$
+				.subscribe(() => {
+					let frmInfo = this.infoForm;
+					let status = this.validationStatus;
+					status.isFormValid = frmInfo.valid;
+					status.isEmailValid = frmInfo.controls.email.valid;
+					status.isPassValid = frmInfo.controls.password.valid;
 			});
-	}
-
-	ngOnDestroy() {
-		this.formClick.unsubscribe();
 	}
 
 	clearInputs() {
@@ -82,7 +90,7 @@ export class InfoFormComponent implements OnInit, OnDestroy  {
   }
 
 	onSubmit() {
-		console.warn(this.infoForm.value);
+		// console.warn(this.infoForm.value);
 		this.router.navigate(['displaySubmit', this.infoForm.value]);
 	}
 }

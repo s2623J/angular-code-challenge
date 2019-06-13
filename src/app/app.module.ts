@@ -1,7 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatDialogModule, MatButtonModule } from '@angular/material';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
@@ -33,6 +33,7 @@ const appRoutes: Routes = [
     BrowserModule,
     AppRoutingModule,
 		ReactiveFormsModule,
+		FormsModule,
 		MatDialogModule,
 		MatButtonModule,
 		BrowserAnimationsModule

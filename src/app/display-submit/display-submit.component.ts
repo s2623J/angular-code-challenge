@@ -13,9 +13,8 @@ export class DisplaySubmitComponent implements OnInit {
 	formValues: object;
 
   ngOnInit() {
-		console.log('Hello! ;-)');
 		this.formValues = this.route.snapshot.params;
-		console.log(this.formValues);
+		// console.log(this.formValues);
   }
 
 }
