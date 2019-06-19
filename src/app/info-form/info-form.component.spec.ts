@@ -1,17 +1,21 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { async, fakeAsync, ComponentFixture, TestBed } from '@angular/core/testing';
+import { Location } from "@angular/common";
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
-
+import { Router } from '@angular/router';
 import { MatDialogModule, MatButtonModule } from '@angular/material';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { RouterTestingModule } from "@angular/router/testing";
 
+import { Observable} from 'rxjs';
 import { AppRoutingModule } from './../app-routing.module';
 import { AppComponent } from './../app.component';
 import { InfoFormComponent } from './../info-form/info-form.component';
 import { DisplaySubmitComponent } from './../display-submit/display-submit.component';
 import { PageNotFoundComponent } from './../page-not-found/page-not-found.component';
-import { DialogComponent } from './../info-form/info-form.component';
 
 describe('InfoFormComponent', () => {
+	let location: Location;
+  let router: Router;
   let component: InfoFormComponent;
   let fixture: ComponentFixture<InfoFormComponent>;
 
@@ -22,8 +26,7 @@ describe('InfoFormComponent', () => {
 		    AppComponent,
 				InfoFormComponent,
 				DisplaySubmitComponent,
-				PageNotFoundComponent,
-				DialogComponent
+				PageNotFoundComponent
 		  ],
 		  imports: [
 		    AppRoutingModule,
@@ -31,18 +34,48 @@ describe('InfoFormComponent', () => {
 				FormsModule,
 				MatDialogModule,
 				MatButtonModule,
-				BrowserAnimationsModule
+				BrowserAnimationsModule,
+				RouterTestingModule.withRoutes([
+				  { path: '', component: InfoFormComponent },
+				  { path: 'displaySubmit', component: DisplaySubmitComponent },
+				  { path: '**', component: PageNotFoundComponent }
+				])
 		  ],
 		  providers: []
     })
     .compileComponents();
+
+		router = TestBed.get(Router);
+    location = TestBed.get(Location);
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(InfoFormComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+		jasmine.clock().install();
   });
+
+	afterEach(() => {
+	    jasmine.clock().uninstall();
+	});
+
+	function awaitStream(stream$: Observable<any>, skipTime?: number) {
+	  let response = null;
+	  stream$.subscribe(data => {
+	    response = data;
+	  });
+	  if (skipTime) {
+	    /**
+	     * use jasmine clock to artificially manipulate time-based web apis
+			 * like setTimeout and setInterval we can easily refactor this and use
+			 * async/await but that means that we will have to actually wait out
+			 * the time needed for every delay/mock request
+	     */
+	    jasmine.clock().tick(skipTime);
+	  }
+	  return response;
+	}
 
   it('should create', () => {
 		expect(component).toBeTruthy();
@@ -127,76 +160,87 @@ describe('InfoFormComponent', () => {
 		});
 	});
 
-	describe('Form Invalid Warning Message', () => {
+	describe('Form (Invalid) Warning Message', () => {
 		it('should display a warning message if the Form is invalid and was ' +
 			'touched but only after user has stopped typing', () => {
-			const hostElement = fixture.nativeElement;
-			const email = hostElement.querySelector('#email');
-			const password = hostElement.querySelector('#password');
-			const component = fixture.componentInstance;
+			let hostElement = fixture.nativeElement;
+			let email = hostElement.querySelector('#email');
+			let password = hostElement.querySelector('#password');
+			let component = fixture.componentInstance;
 			email.value = 'hello@xyz.com';  			// valid value
 			password.value = 'eE#ppppG';					// valid value
-			component.infoForm.controls.email.markAsTouched();
+			component.infoForm.markAsTouched();
 			email.dispatchEvent(new Event('input', { bubbles: true }));
 			password.dispatchEvent(new Event('input', { bubbles: true }));
 			fixture.detectChanges();
 
-			if (component.infoForm.touched && component.infoForm.valid) {
-				component.formClick$.subscribe( status => {
-					 console.log('component.infoForm.valid: '+ status);
-				  }
-				);
-			} else {
-				component.formClick$.subscribe( status => {
-					 console.log('component.infoForm.valid: '+ status);
-				});
+			awaitStream(component.formClick$, 1000);
+			expect(component.validationStatus.isFormValid).toEqual(true);
+		});
+	});
+
+	describe('Form Field Warning Messages: ', () => {
+		it('should display a warning message below each input if it is invalid ' +
+		'and cumulative message at the top of the form with all the errors at ' +
+		'the top of the form on submit.', () => {
+			let hostElement = fixture.nativeElement;
+			let email = hostElement.querySelector('#email');
+			let password = hostElement.querySelector('#password');
+			let component = fixture.componentInstance;
+			let controlObj: object = component.infoForm.controls;
+			let testValObj = {
+				email: 		['xyz@', 'isEmailValid'],
+				password:	['3eEipjpP', 'isPassValid']
+			}
+			for (let key in controlObj) {
+			  if (key != 'subscription') {
+					let ctrlObj = controlObj[key];
+					ctrlObj.value = testValObj[key][0];
+					expect(ctrlObj.valid).toEqual(false);
+					expect(component.infoForm.valid).toEqual(false);
+					email.dispatchEvent(new Event('input', { bubbles: true }));
+					password.dispatchEvent(new Event('input', { bubbles: true }));
+					fixture.detectChanges();
+					awaitStream(component.formClick$, 2000);
+					expect(component.validationStatus[testValObj[key][1]]).toEqual(false);
+			  }
 			}
 		});
 	});
 
-// console.log('Hello! ;-)');
+	describe('Discarding changes modal dialog', () => {
+		it('should launch dialog shen clicking on "Clear" button', () => {
+			spyOn(component, 'clearInputs');
+		  let button = fixture.debugElement.nativeElement.querySelector('#clear');
+		  button.click();
+			fixture.detectChanges();
+		  fixture.whenStable().then(() => {
+		    expect(component.clearInputs).toHaveBeenCalled();
+		  });
+		});
+	});
 
+	describe('Submitting Form', () => {
+		it('should send form data when "Submit" is clicked', () => {
+			spyOn(component, 'onSubmit');
+		  let button = fixture.debugElement.nativeElement.querySelector('#submit');
+			let hostElement = fixture.nativeElement;
+			let email = hostElement.querySelector('#email');
+			let password = hostElement.querySelector('#password');
+			let subscription = hostElement.querySelector('#subscription');
+		  button.click();
+			fixture.detectChanges();
+			fixture.whenStable().then(() => {
+				expect(component.infoForm.value.email).toEqual(email.value);
+				expect(component.infoForm.value.password).toEqual(password.value);
+				expect(component.infoForm.value.subscription).toEqual(subscription.value.split(' ')[1]);
+			});
+		});
 
-	// describe('Form Invalid Warning Message', () => {
-	// 	it('should display a warning message if the Form is invalid and was ' +
-	// 		'touched but only after user has stopped typing', () => {
-	// 		let hostElement = fixture.nativeElement;
-	// 		// let compiled = fixture.debugElement.nativeElement;
-	// 		let component = fixture.componentInstance;
-	// 		let email = hostElement.querySelector('#email');
-	// 		let password = hostElement.querySelector('#password');
-	// 		let clock = jasmine.clock();
-	// 		clock.install();
-	// 		email.value = 'hello@';  			// invalid value
-	// 		password.value = 'eE#ppppG';	// valid value
-	// 		component.infoForm.controls.email.markAsTouched();
-	// 		email.dispatchEvent(new Event('input', { bubbles: true }));
-	// 		password.dispatchEvent(new Event('input', { bubbles: true }));
-	// 		fixture.detectChanges();
-	// 		if (component.infoForm.touched && component.infoForm.valid) {
-	// 			// Warning message is NOT visible
-	// 			clock.tick(3000);
-	// 			// setTimeout(() => {
-	// 				fixture.detectChanges();
-	// 			  expect(component.validationStatus.isFormValid).toEqual(true);
-	// 			// }, 3000);
-	// 			// fixture.detectChanges();
-	// 		  // expect(component.validationStatus.isFormValid).toEqual(true);
-	// 		} else {
-	// 			// Warning message IS visible
-	// 			clock.tick(3000);
-	// 			// setTimeout(() => {
-	// 				fixture.detectChanges();
-	// 				expect(component.validationStatus.isFormValid).toEqual(false);
-	// 			// }, 3000);
-	// 			// fixture.detectChanges();
-	// 			// expect(component.validationStatus.isFormValid).toEqual(false);
-	// 		}
-	// 		clock.uninstall();
-	//   });
-	// });
-
-
-
-
+		it('navigate to "displaySubmit" takes you to /displaySubmit', fakeAsync(() => {
+	    router.navigate(["displaySubmit"]).then(() => {
+	      expect(location.path()).toBe("/displaySubmit");
+	    });
+	  }));
+	});
 });

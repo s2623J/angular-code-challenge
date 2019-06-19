@@ -29,7 +29,7 @@
 
 		<label>
 			<span>Subscription:</span>
-			<select formControlName="subscription" required>
+			<select formControlName="subscription" required id="subscription">
 				<option disabled>-- Choose Option --</option>
 				<option *ngFor="let sub of subscriptionArr" [ngValue]="sub">
 					{{ sub }}
@@ -50,17 +50,17 @@
 			</div>
 	  </label>
 
-		<button type="submit" [disabled]="!validationStatus.isFormValid">Submit</button>
-		<button type="button" (click)="clearInputs()">Clear</button>
+		<button type="submit" id="submit">Submit</button>
+		<button type="button" (click)="clearInputs()" id="clear">Clear</button>
 	</fieldset>
 </form>
 
 
 
-<p>
+<!-- <p>
   Form Status: {{ infoForm.status }}
 </p>
 
 <p>
   Form Value: {{ infoForm.value | json }}
-</p>
+</p> -->

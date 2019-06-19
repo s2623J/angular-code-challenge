@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MatDialog, MatDialogRef  } from '@angular/material';
+import { MatDialog} from '@angular/material';
+import { DialogComponent } from './../dialog/dialog.component';
 
-import { fromEvent , Subscription, Subject} from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 @Component({
@@ -11,9 +11,10 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
   templateUrl: './info-form.component.html',
   styleUrls: ['./info-form.component.css']
 })
-export class InfoFormComponent implements OnInit  {
+export class InfoFormComponent  {
 
 	subscriptionArr:	string[] = [ 'Basic', 'Advanced', 'Pro' ];
+	emailPattern = /^.+@[^\.].*\.[a-z]{2,}$/g;
 	passPattern = /(?=.*?[A-Za-z0-9])(?=.*[^0-9A-Za-z]).+/g;
 	validationStatus = {
 		isFormValid: 	true,
@@ -21,7 +22,11 @@ export class InfoFormComponent implements OnInit  {
 		isPassValid: 	true
 	}
 	infoForm: FormGroup = this.fb.group({
-    email: 				['', [Validators.required, Validators.email]],
+    email: 				['', [
+			Validators.required,
+			Validators.pattern(this.emailPattern),
+			Validators.email
+		]],
 		subscription:	['', Validators.required],
     password: 		['', [
 			Validators.required,
@@ -32,7 +37,7 @@ export class InfoFormComponent implements OnInit  {
 	});
 	formClick$ = this.infoForm.valueChanges
 		.pipe(
-			// wait 700ms after each keystroke before considering the term
+			// wait 700ms after each keystroke before considering the validation
 			debounceTime(700),
 			distinctUntilChanged()
 		);
@@ -50,29 +55,32 @@ export class InfoFormComponent implements OnInit  {
 	}
 
 	ngOnInit() {
-		// this.formClick$ = fromEvent(document.querySelector('#frmInfo'), 'keyup')
-		// fromEvent(this.infoForm, 'valueChanges')
-		// this.formClick$ = this.infoForm.valueChanges
-		// 	.pipe(
-		// 		// wait 700ms after each keystroke before considering the term
-	  //     debounceTime(700),
-	  //     distinctUntilChanged()
-		// 	)
-			this.formClick$
-				.subscribe(() => {
-					let frmInfo = this.infoForm;
-					let status = this.validationStatus;
-					status.isFormValid = frmInfo.valid;
-					status.isEmailValid = frmInfo.controls.email.valid;
-					status.isPassValid = frmInfo.controls.password.valid;
-			});
+		this.formClick$
+			.subscribe(() => {
+				let frmInfo = this.infoForm;
+				let email = this.infoForm.controls.email;
+				let password = this.infoForm.controls.password;
+				let status = this.validationStatus;
+				let isFormReset = frmInfo.controls.email.value == null &&
+					frmInfo.controls.password.value == null;
+
+				status.isFormValid = frmInfo.valid;
+				status.isEmailValid = email.valid;
+				status.isPassValid = password.valid;
+
+			  if (frmInfo.valid || isFormReset) {
+					status.isEmailValid = true;
+					status.isPassValid = true;
+					status.isFormValid = true;
+				}
+		});
 	}
 
 	clearInputs() {
 		this.openDialog();
 	}
 
-	openDialog(): void {
+	private openDialog(): void {
     const dialogRef = this.dialog.open(DialogComponent, {
       hasBackdrop: false,
 			data: {
@@ -83,46 +91,23 @@ export class InfoFormComponent implements OnInit  {
     dialogRef.afterClosed()
 			.subscribe((clearForm) => {
 				if (clearForm) {
+					let status = this.validationStatus;
 					this.infoForm.reset();
+					status.isFormValid = true;
+					status.isEmailValid = true;
+					status.isPassValid = true;
 					this.setDefaultSelectValue();
 				}
 	    });
   }
 
 	onSubmit() {
-		// console.warn(this.infoForm.value);
-		this.router.navigate(['displaySubmit', this.infoForm.value]);
-	}
-}
-
-////////////////////////////////////////////////////////////////////////
-///////////////////////  Dialog Modal Begin  ///////////////////////////
-////////////////////////////////////////////////////////////////////////
-
-export interface DialogData {
-	clearForm: false
-}
-
-@Component({
-  selector: 'app-dialog',
-	template: `
-    <h1 mat-dialog-title>Discarding Changes:</h1>
-    <mat-dialog-content>
-      Pressing "OK" will clear the form.Do you want to proceed?
-    </mat-dialog-content>
-    <mat-dialog-actions>
-      <button mat-button (click)="onClick(true)">OK</button>
-      <button mat-button (click)="onClick(false)">Cancel</button>
-    </mat-dialog-actions>
-  `
-})
-export class DialogComponent {
-
-  constructor( public dialogRef: MatDialogRef<DialogComponent> ) { }
-
-	clearForm = false;
-
-	onClick(val: boolean) {
-		this.dialogRef.close(val);
+		let frmInfo = this.infoForm;
+		let status = this.validationStatus;
+		status.isEmailValid = frmInfo.controls.email.valid;
+		status.isPassValid = frmInfo.controls.password.valid;
+		if (this.infoForm.valid) {
+		  this.router.navigate(['displaySubmit', this.infoForm.value]);
+		}
 	}
 }

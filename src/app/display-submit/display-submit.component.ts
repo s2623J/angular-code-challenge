@@ -3,7 +3,20 @@ import {ActivatedRoute} from '@angular/router';
 
 @Component({
   selector: 'app-display-submit',
-  templateUrl: './display-submit.component.html',
+  template: `<h1>
+	  You have entered the following information:
+	</h1>
+
+	<div class="dispData">
+		<p>
+		  Form Values: {{ formValues | json }}
+		</p>
+
+		<p>
+			<a routerLink="/" routerLinkActive="active">Go Back</a>
+		</p>
+	</div>
+`,
   styles: ['.dispData { font-size: 30px; margin-left: 20px; }']
 })
 export class DisplaySubmitComponent implements OnInit {
@@ -14,7 +27,5 @@ export class DisplaySubmitComponent implements OnInit {
 
   ngOnInit() {
 		this.formValues = this.route.snapshot.params;
-		// console.log(this.formValues);
   }
-
 }
